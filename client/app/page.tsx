@@ -26,6 +26,7 @@ interface PlanTripResponse {
   packages: TripPackage[];
   user_input: any;
   generated_at: string;
+  session_id: string;
 }
 
 export default function Home() {
@@ -33,6 +34,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<PlanTripResponse | null>(null);
   const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Priority toggles
+  const [priorities, setPriorities] = useState({
+    prioritize_flight_time: false,
+    prioritize_hotel_quality: false,
+    prioritize_cost: false,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +59,7 @@ export default function Home() {
         family_friendly_hotel: true,
         duration_range: [3, 5],
         num_kids: 2,
+        ...priorities, // Include user priorities
         other: { poi: "National Gallery" },
       },
     };
@@ -82,6 +92,7 @@ export default function Home() {
       }
       const data = await res.json();
       setResults(data);
+      setSessionId(data.session_id);
     } catch (err: any) {
       setError(err.message || "Unknown error");
     } finally {
@@ -112,6 +123,43 @@ export default function Home() {
       return "bg-gradient-to-r from-amber-400 to-orange-500"; // Good - Amber/Orange
     } else {
       return "bg-gradient-to-r from-red-400 to-pink-500"; // Fair - Red/Pink
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!sessionId) return;
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      let idToken = undefined;
+      const user: User | null = auth.currentUser;
+      if (user) {
+        idToken = await user.getIdToken();
+      }
+      
+      const res = await fetch("http://localhost:8000/api/regenerate-trip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: idToken ? `Bearer ${idToken}` : "",
+        },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      
+      if (!res.ok) {
+        setError("Failed to regenerate options");
+        setLoading(false);
+        return;
+      }
+      
+      const data = await res.json();
+      setResults(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to regenerate");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -166,6 +214,57 @@ export default function Home() {
             </button>
           </form>
 
+          {/* Priority Settings */}
+          <div className="mb-6 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Trip Priorities</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={priorities.prioritize_flight_time}
+                  onChange={(e) => setPriorities(prev => ({
+                    ...prev,
+                    prioritize_flight_time: e.target.checked,
+                    prioritize_hotel_quality: e.target.checked ? false : prev.prioritize_hotel_quality,
+                    prioritize_cost: e.target.checked ? false : prev.prioritize_cost,
+                  }))}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">✈️ Prioritize Flight Time</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={priorities.prioritize_hotel_quality}
+                  onChange={(e) => setPriorities(prev => ({
+                    ...prev,
+                    prioritize_hotel_quality: e.target.checked,
+                    prioritize_flight_time: e.target.checked ? false : prev.prioritize_flight_time,
+                    prioritize_cost: e.target.checked ? false : prev.prioritize_cost,
+                  }))}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">🏨 Prioritize Hotel Quality</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={priorities.prioritize_cost}
+                  onChange={(e) => setPriorities(prev => ({
+                    ...prev,
+                    prioritize_cost: e.target.checked,
+                    prioritize_flight_time: e.target.checked ? false : prev.prioritize_flight_time,
+                    prioritize_hotel_quality: e.target.checked ? false : prev.prioritize_hotel_quality,
+                  }))}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">💰 Prioritize Cost</span>
+              </label>
+            </div>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
@@ -187,9 +286,26 @@ export default function Home() {
             <div className="mt-8">
               <div className="mb-6 text-center">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">✨ Your Perfect Trip Options</h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 mb-4">
                   Generated at {new Date(results.generated_at).toLocaleString()}
                 </p>
+                <button
+                  onClick={handleRegenerate}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>Regenerating...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span>🌀</span>
+                      <span>Regenerate Options</span>
+                    </div>
+                  )}
+                </button>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[600px] overflow-y-auto pr-2">

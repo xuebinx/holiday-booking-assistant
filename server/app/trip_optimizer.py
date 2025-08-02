@@ -148,51 +148,86 @@ def calculate_score(option: dict, preferences: dict) -> float:
     """Calculate a score for the trip option based on preferences."""
     score = 0.0
     
+    # Determine scoring weights based on user priorities
+    cost_weight = 0.4
+    flight_weight = 0.3
+    hotel_weight = 0.25
+    duration_weight = 0.05
+    
+    # Adjust weights based on user priorities
+    if preferences.get('prioritize_cost', False):
+        cost_weight = 0.6
+        flight_weight = 0.2
+        hotel_weight = 0.15
+        duration_weight = 0.05
+    elif preferences.get('prioritize_flight_time', False):
+        cost_weight = 0.25
+        flight_weight = 0.5
+        hotel_weight = 0.2
+        duration_weight = 0.05
+    elif preferences.get('prioritize_hotel_quality', False):
+        cost_weight = 0.25
+        flight_weight = 0.2
+        hotel_weight = 0.5
+        duration_weight = 0.05
+    
     # Cost scoring (lower is better)
     max_expected_cost = 2000  # Assume £2000 is max expected cost
     cost_score = max(0, 100 - (option['total_cost'] / max_expected_cost) * 100)
-    score += cost_score * 0.4  # 40% weight for cost
+    score += cost_score * cost_weight
     
     # Flight time scoring
     flight = option['flight']
     depart_hour = int(flight['depart_time'].split(':')[0])
     
+    flight_score = 0
     if preferences.get('prefer_evening_flights', False):
         if 18 <= depart_hour <= 22:  # Evening flights
-            score += 30
+            flight_score = 100
         elif 6 <= depart_hour <= 12:  # Morning flights
-            score += 15
+            flight_score = 50
         else:  # Afternoon flights
-            score += 10
+            flight_score = 30
     else:
         if 8 <= depart_hour <= 16:  # Day flights
-            score += 30
+            flight_score = 100
         else:
-            score += 15
+            flight_score = 50
     
-    # Hotel distance scoring (closer to POI is better)
+    score += flight_score * flight_weight
+    
+    # Hotel quality scoring (closer to POI is better)
     hotel = option['hotel']
     distance = hotel['distance_from_poi_km']
+    
+    hotel_score = 0
     if distance <= 1.0:
-        score += 25
+        hotel_score = 100
     elif distance <= 2.0:
-        score += 20
+        hotel_score = 80
     elif distance <= 3.0:
-        score += 15
+        hotel_score = 60
     else:
-        score += 10
+        hotel_score = 40
     
     # Family-friendly hotel bonus
     if preferences.get('family_friendly_hotel', False) and hotel.get('family_friendly', False):
-        score += 15
+        hotel_score += 20
+    
+    score += hotel_score * hotel_weight
     
     # Duration scoring (prefer longer stays)
     duration = option['duration']
+    duration_score = 0
     if duration >= 5:
-        score += 10
+        duration_score = 100
     elif duration >= 4:
-        score += 8
+        duration_score = 80
     elif duration >= 3:
-        score += 5
+        duration_score = 60
+    else:
+        duration_score = 40
+    
+    score += duration_score * duration_weight
     
     return round(score, 1) 

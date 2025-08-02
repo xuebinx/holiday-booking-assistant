@@ -63,6 +63,10 @@ class TripPreferences(BaseModel):
     family_friendly_hotel: bool = False
     duration_range: List[int] = Field(default=[3, 5])  # e.g. [3, 5] for 3-5 days
     num_kids: int = Field(default=0)
+    # New priority settings
+    prioritize_flight_time: bool = Field(default=False, description="Prioritize flight time over hotel quality")
+    prioritize_hotel_quality: bool = Field(default=False, description="Prioritize hotel quality over flight time")
+    prioritize_cost: bool = Field(default=False, description="Prioritize cost over other factors")
     other: Dict[str, Any] = Field(default_factory=dict)
 
 class PlanTripRequest(BaseModel):
@@ -95,9 +99,12 @@ class PlanTripResponse(BaseModel):
     packages: List[TripPackage]
     user_input: dict
     generated_at: datetime
+    session_id: str = Field(description="Unique session ID for this trip request")
 
 # --- Trip Request DB Model ---
 class TripRequestDB(BaseModel):
+    session_id: str = Field(description="Unique session identifier")
+    user_id: Optional[str] = Field(default=None, description="Firebase user ID")
     destination: str
     date_range: List[date]
     num_travelers: int
@@ -105,14 +112,19 @@ class TripRequestDB(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     generated_packages: List[Dict[str, Any]] = Field(default_factory=list)
     generated_at: Optional[datetime] = None
+    regeneration_count: int = Field(default=0, description="Number of times this session was regenerated")
 
-# --- Endpoint ---
+# --- Endpoints ---
 @app.post("/api/plan-trip", response_model=PlanTripResponse)
 async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
     # Verify Firebase ID token (temporarily disabled for testing)
     # verify_firebase_token(request)
     
-    # Parse and prepare trip intent
+    # Generate unique session ID
+    import uuid
+    session_id = str(uuid.uuid4())
+    
+    # Parse and prepare trip intent with enhanced preferences
     trip_intent = {
         'destination': payload.destination,
         'date_range': payload.date_range,
@@ -122,6 +134,9 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
             'family_friendly_hotel': payload.preferences.family_friendly_hotel,
             'duration_range': payload.preferences.duration_range,
             'num_kids': payload.preferences.num_kids,
+            'prioritize_flight_time': payload.preferences.prioritize_flight_time,
+            'prioritize_hotel_quality': payload.preferences.prioritize_hotel_quality,
+            'prioritize_cost': payload.preferences.prioritize_cost,
             **payload.preferences.other
         }
     }
@@ -157,6 +172,7 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
     
     # Store request and results in MongoDB
     trip_db = TripRequestDB(
+        session_id=session_id,
         destination=payload.destination,
         date_range=payload.date_range,
         num_travelers=payload.num_travelers,
@@ -186,9 +202,110 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
     return PlanTripResponse(
         packages=packages,
         user_input=trip_intent,
-        generated_at=generated_at
+        generated_at=generated_at,
+        session_id=session_id
     )
 
 @app.get("/")
 def read_root():
     return {"message": "Holiday Booking Assistant API is running."}
+
+@app.post("/api/regenerate-trip", response_model=PlanTripResponse)
+async def regenerate_trip(request: Request, session_id: str = Body(..., embed=True)):
+    """Regenerate trip options for an existing session with slight variations"""
+    # Find existing session
+    session = await trip_requests_collection.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Update regeneration count
+    await trip_requests_collection.update_one(
+        {"session_id": session_id},
+        {"$inc": {"regeneration_count": 1}}
+    )
+    
+    # Generate new options with slight variations
+    trip_intent = {
+        'destination': session['destination'],
+        'date_range': [date.fromisoformat(d) for d in session['date_range']],
+        'num_travelers': session['num_travelers'],
+        'preferences': session['preferences']
+    }
+    
+    # Add some randomization to get different results
+    import random
+    random.seed(session.get('regeneration_count', 0) + 1)
+    
+    optimized_options = generate_trip_options(trip_intent)
+    
+    # Convert to TripPackage format
+    packages = []
+    for option in optimized_options:
+        trip_package = TripPackage(
+            flight=FlightDetails(
+                airline=option['flight']['airline'],
+                depart_time=option['flight']['depart_time'],
+                arrive_time=option['flight']['arrive_time'],
+                cost=option['flight']['cost']
+            ),
+            hotel=HotelDetails(
+                name=option['hotel']['name'],
+                cost=option['hotel']['cost'],
+                distance_from_poi_km=option['hotel']['distance_from_poi_km']
+            ),
+            total_score=option['total_score'],
+            total_cost=option['total_cost'],
+            duration=option['duration'],
+            start_date=option['start_date'],
+            end_date=option['end_date']
+        )
+        packages.append(trip_package)
+    
+    # Update session with new packages
+    generated_at = datetime.utcnow()
+    
+    # Convert packages to MongoDB-compatible format
+    def package_to_mongo(pkg: TripPackage):
+        pkg_dict = pkg.dict()
+        pkg_dict["start_date"] = pkg.start_date.isoformat()
+        pkg_dict["end_date"] = pkg.end_date.isoformat()
+        return pkg_dict
+    
+    await trip_requests_collection.update_one(
+        {"session_id": session_id},
+        {
+            "$set": {
+                "generated_packages": [package_to_mongo(pkg) for pkg in packages],
+                "generated_at": generated_at.isoformat()
+            }
+        }
+    )
+    
+    return PlanTripResponse(
+        packages=packages,
+        user_input=trip_intent,
+        generated_at=generated_at,
+        session_id=session_id
+    )
+
+@app.get("/api/trip-history/{user_id}")
+async def get_trip_history(user_id: str, limit: int = 10):
+    """Get trip history for a user"""
+    # verify_firebase_token(request)  # Uncomment when auth is enabled
+    
+    cursor = trip_requests_collection.find(
+        {"user_id": user_id}
+    ).sort("created_at", -1).limit(limit)
+    
+    sessions = await cursor.to_list(length=limit)
+    
+    # Convert dates back to proper format
+    for session in sessions:
+        if "date_range" in session:
+            session["date_range"] = [date.fromisoformat(d) for d in session["date_range"]]
+        if "created_at" in session:
+            session["created_at"] = datetime.fromisoformat(session["created_at"])
+        if "generated_at" in session:
+            session["generated_at"] = datetime.fromisoformat(session["generated_at"])
+    
+    return {"sessions": sessions}

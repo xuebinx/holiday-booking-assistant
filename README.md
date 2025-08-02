@@ -1,138 +1,123 @@
 # 🏖️ Smart Holiday Booking Assistant
 
-A full-stack AI-powered holiday booking assistant that helps users find optimized travel packages through an intuitive chat interface. The system uses intelligent scoring algorithms to recommend the best flight and hotel combinations based on user preferences.
+A full-stack AI-powered holiday booking assistant that helps users plan their perfect trips through an intuitive chat interface. The system generates optimized travel packages based on user preferences and provides intelligent recommendations.
 
-## ✨ Features
+## ✨ **Features**
 
-### 🤖 Smart Trip Optimization
-- **Intelligent Scoring Algorithm**: Multi-criteria optimization with 40% cost weight, flight time preferences, hotel proximity, and family-friendliness
-- **Flexible Date Ranges**: Generates 3-5 day travel windows within user's specified date range
-- **Preference Matching**: Evening flights, family-friendly hotels, proximity to points of interest
-- **Real-time Recommendations**: Returns top 3 optimized trip packages
+### 🎯 **Core Functionality**
+- **AI-Powered Trip Planning**: Natural language processing for trip intent
+- **Smart Package Generation**: Optimized flight + hotel combinations
+- **Intelligent Scoring**: Multi-factor scoring algorithm (cost, timing, location, preferences)
+- **Real-time Recommendations**: Instant trip package suggestions
 
-### 🎨 Modern User Interface
-- **Chat-Style Interface**: Intuitive conversation flow for trip planning
-- **Responsive Design**: Mobile-friendly grid layout (1/2/3 columns for mobile/tablet/desktop)
-- **Beautiful Cards**: Clean display of flight details, hotel information, costs, and scores
-- **Real-time Feedback**: Loading states, error handling, and success messages
+### 🚀 **Phase 1.5 Enhancements**
+- **🔄 Regenerate Options**: Generate new trip variations with the "🌀 Regenerate Options" button
+- **🎯 User-Adjustable Priorities**: Toggle between prioritizing flight time, hotel quality, or cost
+- **📚 Session History**: Complete trip planning history stored in MongoDB
+- **🔄 Session Management**: Unique session IDs for tracking and regeneration
 
-### 🔐 Secure Authentication
-- **Firebase Authentication**: Google sign-in integration
-- **Token Validation**: Secure backend validation of Firebase ID tokens
-- **User Session Management**: Persistent login state with user profile display
+### 🔐 **Authentication & Security**
+- **Firebase Authentication**: Google Sign-In and Email/Password
+- **Secure API**: Firebase ID token validation
+- **CORS Protection**: Cross-origin request security
 
-### 📊 Rich Data Management
-- **MongoDB Integration**: Stores trip requests and generated packages
-- **Comprehensive Data**: Flight details, hotel information, pricing, scoring
-- **Historical Tracking**: Timestamped requests and recommendations
+### 📱 **User Experience**
+- **Responsive Design**: Mobile-friendly interface
+- **Real-time Feedback**: Loading states and error handling
+- **Beautiful UI**: Modern gradient design with glass morphism effects
+- **Interactive Elements**: Hover effects and smooth animations
 
-## 🏗️ Architecture
+## 🏗️ **Architecture**
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Database      │
 │   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (MongoDB)     │
-│   Port: 3002    │    │   Port: 8000    │    │   Port: 27017   │
+│                 │    │                 │    │                 │
+│ • React UI      │    │ • Trip Planning │    │ • Trip Requests │
+│ • Firebase Auth │    │ • Optimization  │    │ • User History  │
+│ • Real-time     │    │ • Session Mgmt  │    │ • Analytics     │
+│   Updates       │    │ • API Endpoints │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │
-         │                       │
-         ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐
-│  Firebase Auth  │    │ Trip Optimizer  │
-│  (Google Sign-in)│    │  (Python Module)│
-└─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 **Quick Start**
 
-### Prerequisites
+### **Prerequisites**
 - Node.js 18+ and npm
 - Python 3.8+
 - MongoDB (local or cloud)
-- Firebase project with Authentication enabled
+- Firebase project (for authentication)
 
-### 1. Clone and Setup
+### **1. Clone and Setup**
 ```bash
 git clone <repository-url>
 cd holiday-booking-assistant
 ```
 
-### 2. Backend Setup
+### **2. Backend Setup**
 ```bash
 cd server
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 
 # Set environment variables
 export MONGO_URI="mongodb://localhost:27017"
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/firebase-service-account.json"
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/firebase-credentials.json"
 
-# Start server
+# Start the server
 python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. Frontend Setup
+### **3. Frontend Setup**
 ```bash
 cd client
-
-# Install dependencies
 npm install
 
-# Create environment file
+# Set environment variables
 cp .env.example .env.local
+# Edit .env.local with your Firebase config
 
-# Add your Firebase config to .env.local:
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-
-# Start development server
+# Start the development server
 npm run dev
 ```
 
-### 4. Access the Application
-- **Frontend**: http://localhost:3002 (or available port)
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
+### **4. Access the Application**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
-## 📁 Project Structure
+## 📁 **Project Structure**
 
 ```
 holiday-booking-assistant/
 ├── client/                          # Next.js Frontend
 │   ├── app/
 │   │   ├── components/
-│   │   │   └── AuthHeader.tsx      # Firebase auth component
+│   │   │   └── AuthHeader.tsx      # Authentication UI
 │   │   ├── firebase.ts             # Firebase configuration
-│   │   ├── layout.tsx              # Root layout with header
+│   │   ├── layout.tsx              # Root layout
 │   │   └── page.tsx                # Main chat interface
-│   ├── .env.local                  # Environment variables
-│   ├── package.json
-│   └── tailwind.config.js
+│   ├── public/
+│   └── package.json
 ├── server/                          # FastAPI Backend
 │   ├── app/
 │   │   ├── main.py                 # Main API endpoints
 │   │   └── trip_optimizer.py       # Trip optimization logic
 │   ├── requirements.txt
-│   └── .env                        # Backend environment
-└── README.md
+│   └── README.md
+└── README.md                        # This file
 ```
 
-## 🔧 API Endpoints
+## 🔌 **API Endpoints**
 
-### POST `/api/plan-trip`
-Generate optimized trip packages based on user preferences.
+### **Core Endpoints**
+- `POST /api/plan-trip` - Generate trip packages
+- `POST /api/regenerate-trip` - Generate new variations for existing session
+- `GET /api/trip-history/{user_id}` - Retrieve user's trip history
 
-**Request Body:**
+### **Request Format**
 ```json
 {
   "destination": "London",
@@ -143,116 +128,170 @@ Generate optimized trip packages based on user preferences.
     "family_friendly_hotel": true,
     "duration_range": [3, 5],
     "num_kids": 2,
-    "other": {
-      "poi": "National Gallery"
-    }
+    "prioritize_flight_time": false,
+    "prioritize_hotel_quality": false,
+    "prioritize_cost": true,
+    "other": { "poi": "National Gallery" }
   }
 }
 ```
 
-**Response:**
+### **Response Format**
 ```json
 {
   "packages": [
     {
       "flight": {
         "airline": "British Airways",
-        "depart_time": "19:30",
-        "arrive_time": "21:45",
-        "cost": 180.0
+        "depart_time": "18:53",
+        "arrive_time": "21:04",
+        "cost": 101.0
       },
       "hotel": {
-        "name": "Hilton London",
-        "cost": 120.0,
-        "distance_from_poi_km": 1.2
+        "name": "Marriott London",
+        "cost": 106.0,
+        "distance_from_poi_km": 1.6
       },
-      "total_score": 85.5,
-      "total_cost": 1080.0,
-      "duration": 4,
-      "start_date": "2024-08-10",
-      "end_date": "2024-08-14"
+      "total_score": 72.9,
+      "total_cost": 1257.0,
+      "duration": 3,
+      "start_date": "2024-08-12",
+      "end_date": "2024-08-15"
     }
   ],
   "user_input": {...},
-  "generated_at": "2024-01-15T10:30:00Z"
+  "generated_at": "2024-08-02T20:20:58.215193",
+  "session_id": "744f43ab-8f5c-4f5f-b92f-167db8c00aa5"
 }
 ```
 
-### GET `/`
-Health check endpoint.
+## 🧠 **Trip Optimization Algorithm**
 
-## 🧠 Trip Optimization Algorithm
+### **Scoring Criteria**
+The system uses a weighted scoring algorithm that considers:
 
-The system uses a sophisticated scoring algorithm that considers:
+| Factor | Weight (Default) | Weight (Cost Priority) | Weight (Flight Priority) | Weight (Hotel Priority) |
+|--------|------------------|------------------------|--------------------------|-------------------------|
+| **Cost** | 40% | 60% | 25% | 25% |
+| **Flight Time** | 30% | 20% | 50% | 20% |
+| **Hotel Quality** | 25% | 15% | 20% | 50% |
+| **Duration** | 5% | 5% | 5% | 5% |
 
-### Scoring Criteria (Total: 100 points)
-- **Cost (40%)**: Lower costs receive higher scores
-- **Flight Time (30%)**: Evening flights preferred if specified
-- **Hotel Proximity (25%)**: Closer to POI gets higher scores
-- **Family-Friendly (15%)**: Bonus for family-friendly hotels
-- **Duration Bonus**: Longer stays (5+ days) get additional points
+### **Priority System**
+- **💰 Cost Priority**: Emphasizes budget-friendly options
+- **✈️ Flight Priority**: Optimizes for preferred flight times
+- **🏨 Hotel Priority**: Focuses on hotel quality and location
 
-### Optimization Process
-1. **Generate Travel Windows**: Creates all valid 3-5 day combinations within date range
-2. **Flight Options**: 3 flight options per window with varying times and costs
-3. **Hotel Options**: 3 hotel options with different locations and amenities
-4. **Package Creation**: Combines flights and hotels into complete packages
-5. **Scoring**: Applies preference-based scoring algorithm
-6. **Ranking**: Returns top 3 highest-scoring packages
+### **Scoring Details**
+- **Cost Score**: Lower costs get higher scores (0-100 scale)
+- **Flight Score**: Evening flights preferred if specified (100/50/30 points)
+- **Hotel Score**: Closer to POI gets higher scores (100/80/60/40 points)
+- **Duration Score**: Longer stays preferred (100/80/60/40 points)
 
-## 🎨 UI Components
+## 🎨 **UI Components**
 
-### Chat Interface
-- **Input Field**: Text input for trip requests
-- **Send Button**: Submit requests to backend
-- **Loading Spinner**: Visual feedback during processing
-- **Error Messages**: Clear error display
+### **Main Interface**
+- **Chat Input**: Natural language trip description
+- **Priority Toggles**: Three mutually exclusive priority settings
+- **Trip Cards**: Beautiful cards showing flight, hotel, and pricing details
+- **Regenerate Button**: Generate new variations with cyclone emoji
 
-### Trip Package Cards
-- **Header**: Option number, date range, duration
-- **Score Badge**: Visual score indicator
-- **Total Cost**: Prominent cost display
-- **Flight Section**: Airline, times, cost
-- **Hotel Section**: Name, location, nightly rate
-- **Responsive Grid**: Adapts to screen size
+### **Visual Design**
+- **Gradient Backgrounds**: Modern blue-purple gradients
+- **Glass Morphism**: Translucent card effects
+- **Color-Coded Scores**: Green (excellent), Amber (good), Red (fair)
+- **Responsive Grid**: Mobile-friendly card layout
 
-### Authentication Header
-- **User Avatar**: Google profile picture
-- **User Name**: Display name or email
-- **Sign Out**: Logout functionality
-- **Sign In**: Google authentication button
+## 🔐 **Security Features**
 
-## 🔐 Security Features
+### **Authentication**
+- Firebase Authentication integration
+- Google Sign-In support
+- Email/Password authentication
+- Secure token validation
 
-- **Firebase Authentication**: Secure Google sign-in
-- **Token Validation**: Backend verification of Firebase ID tokens
-- **CORS Configuration**: Secure cross-origin requests
-- **Environment Variables**: Secure configuration management
+### **API Security**
+- CORS protection for cross-origin requests
+- Firebase ID token validation
+- Input sanitization and validation
+- Rate limiting (planned)
 
-## 🛠️ Development
+## 🗄️ **Data Management**
 
-### Adding New Features
-1. **Backend**: Add endpoints in `server/app/main.py`
-2. **Frontend**: Create components in `client/app/components/`
-3. **Optimization**: Extend `server/app/trip_optimizer.py`
+### **MongoDB Collections**
+- `trip_requests`: Complete trip planning sessions
+- Session tracking with regeneration counts
+- User association for history
+- Timestamp tracking for analytics
 
-### Testing
+### **Session Management**
+- Unique session IDs for each trip request
+- Regeneration tracking and history
+- User preference persistence
+- Complete audit trail
+
+## 🧪 **Development & Testing**
+
+### **Development Scripts**
 ```bash
-# Backend tests
+# Backend
 cd server
-python -m pytest
+python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Frontend tests
+# Frontend
 cd client
-npm test
+npm run dev
 ```
 
-### Deployment
-- **Frontend**: Deploy to Vercel/Netlify
-- **Backend**: Deploy to Railway/Render/AWS
-- **Database**: Use MongoDB Atlas for production
+### **Testing**
+- API testing with FastAPI's automatic docs
+- Frontend testing with Next.js development tools
+- MongoDB integration testing
+- CORS and authentication testing
 
-## 🤝 Contributing
+## 🚀 **Deployment**
+
+### **Backend Deployment**
+- FastAPI with Uvicorn ASGI server
+- MongoDB Atlas for cloud database
+- Firebase Admin SDK for authentication
+- Environment variable configuration
+
+### **Frontend Deployment**
+- Next.js static export or Vercel deployment
+- Firebase hosting integration
+- Environment variable management
+- CDN optimization
+
+## 📊 **Monitoring & Analytics**
+
+### **Performance Metrics**
+- API response times
+- Trip generation success rates
+- User engagement metrics
+- Regeneration frequency
+
+### **Error Tracking**
+- Comprehensive error logging
+- User feedback collection
+- Performance monitoring
+- Debug information capture
+
+## 🔮 **Future Enhancements**
+
+### **Phase 2 Features**
+- Real flight/hotel API integration
+- Payment processing
+- Booking confirmation
+- Email notifications
+
+### **Advanced Features**
+- Multi-destination trips
+- Group booking optimization
+- Seasonal pricing analysis
+- AI-powered recommendations
+
+## 🤝 **Contributing**
 
 1. Fork the repository
 2. Create a feature branch
@@ -260,17 +299,17 @@ npm test
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## 📄 **License**
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 🆘 **Support**
 
 For support and questions:
-- Create an issue in the repository
 - Check the API documentation at `/docs`
-- Review the Firebase console for authentication issues
+- Review the troubleshooting guides
+- Open an issue on GitHub
 
 ---
 
-**Built with ❤️ using Next.js, FastAPI, MongoDB, and Firebase** 
+**Built with ❤️ using Next.js, FastAPI, and MongoDB** 

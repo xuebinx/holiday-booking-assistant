@@ -1,109 +1,98 @@
-# 🚀 Holiday Booking Assistant - Backend
+# 🚀 Backend - Smart Holiday Booking Assistant
 
-A high-performance FastAPI backend for the Smart Holiday Booking Assistant featuring intelligent trip optimization, MongoDB integration, and Firebase authentication.
+A high-performance FastAPI backend for the Smart Holiday Booking Assistant, featuring intelligent trip optimization, session management, and comprehensive API endpoints. Built with Python, FastAPI, and MongoDB for scalable trip planning solutions.
 
-## ✨ Features
+## ✨ **Features**
 
-### 🤖 Smart Trip Optimization
-- **Intelligent Scoring Algorithm**: Multi-criteria optimization with configurable weights
-- **Flexible Date Ranges**: Generates 3-5 day travel windows within user's date range
-- **Preference Matching**: Evening flights, family-friendly hotels, POI proximity
-- **Real-time Recommendations**: Returns top 3 optimized trip packages
+### 🎯 **Core Backend Functionality**
+- **AI-Powered Trip Optimization**: Intelligent scoring algorithm for travel packages
+- **Real-time Package Generation**: Instant flight + hotel combinations
+- **Multi-factor Scoring**: Cost, timing, location, and preference-based optimization
+- **Session Management**: Complete trip planning session tracking
 
-### 🔐 Authentication & Security
-- **Firebase Admin SDK**: Secure backend validation of Firebase ID tokens
-- **CORS Configuration**: Secure cross-origin requests for frontend
-- **Environment Variables**: Secure configuration management
-- **Token Validation**: Automatic verification of authentication headers
+### 🚀 **Phase 1.5 Enhancements**
+- **🔄 Regenerate Endpoint**: Generate new trip variations for existing sessions
+- **🎯 Priority-Based Scoring**: Dynamic weight adjustment based on user preferences
+- **📚 Session History**: Complete trip planning history with MongoDB
+- **🔄 Session Persistence**: Unique session IDs and regeneration tracking
 
-### 📊 Data Management
-- **MongoDB Integration**: Async database operations with Motor
-- **Comprehensive Schemas**: Pydantic models for request/response validation
-- **Historical Tracking**: Timestamped requests and generated packages
-- **Data Persistence**: Stores both user input and optimization results
+### 🔐 **Security & Authentication**
+- **Firebase Integration**: Secure Firebase Admin SDK authentication
+- **Token Validation**: Real-time Firebase ID token verification
+- **CORS Protection**: Secure cross-origin request handling
+- **Input Validation**: Comprehensive Pydantic model validation
 
-### 🚀 Performance
-- **Async Operations**: Non-blocking database and API operations
-- **FastAPI Framework**: High-performance Python web framework
-- **Uvicorn Server**: ASGI server with hot reload for development
-- **Optimized Queries**: Efficient MongoDB operations
+### 📊 **Data Management**
+- **MongoDB Integration**: Async MongoDB with Motor driver
+- **Comprehensive Schemas**: Structured data models for all entities
+- **Audit Trail**: Complete timestamp tracking and user association
+- **Scalable Architecture**: Ready for production deployment
 
-## 🚀 Quick Start
+## 🏗️ **Architecture**
 
-### Prerequisites
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   FastAPI App   │    │  Trip Optimizer │    │   MongoDB       │
+│                 │    │                 │    │                 │
+│ • API Endpoints │◄──►│ • Scoring Logic │◄──►│ • Trip Requests │
+│ • Auth Middleware│    │ • Package Gen   │    │ • User History  │
+│ • CORS Config   │    │ • Priority Mgmt │    │ • Sessions      │
+│ • Validation    │    │ • Randomization │    │ • Analytics     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 🚀 **Quick Start**
+
+### **Prerequisites**
 - Python 3.8+
 - MongoDB (local or cloud)
-- Firebase project with Admin SDK credentials
+- Firebase project with Admin SDK
 
-### Installation
+### **Installation**
 ```bash
 cd server
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Environment Configuration
-Create a `.env` file or set environment variables:
-
-```env
-# MongoDB Configuration
-MONGO_URI=mongodb://localhost:27017
-
-# Firebase Admin SDK
-GOOGLE_APPLICATION_CREDENTIALS=path/to/firebase-service-account.json
-
-# Optional: Custom port
-PORT=8000
-```
-
-### Development
+### **Environment Configuration**
 ```bash
-# Start development server with hot reload
-python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Start production server
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# Run tests
-python -m pytest
-
-# Run linting
-flake8 app/
+# Set environment variables
+export MONGO_URI="mongodb://localhost:27017"
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/firebase-credentials.json"
 ```
 
-### Access the API
-- **API Base URL**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc Documentation**: http://localhost:8000/redoc
+### **Development Server**
+```bash
+python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### **Access Points**
+- **API**: http://localhost:8000
+- **Documentation**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/
 
-## 📁 Project Structure
+## 📁 **Project Structure**
 
 ```
 server/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI application and endpoints
-│   └── trip_optimizer.py          # Trip optimization algorithm
+│   ├── main.py                    # Main FastAPI application
+│   └── trip_optimizer.py          # Trip optimization logic
 ├── requirements.txt               # Python dependencies
 ├── .env                          # Environment variables
-├── .gitignore
-└── README.md
+└── README.md                     # This file
 ```
 
-## 🔧 API Endpoints
+## 🔌 **API Endpoints**
 
-### POST `/api/plan-trip`
+### **Core Endpoints**
+
+#### **POST `/api/plan-trip`**
 Generate optimized trip packages based on user preferences.
 
-**Authentication**: Requires Firebase ID token in Authorization header
-
-**Request Body**:
+**Request Body:**
 ```json
 {
   "destination": "London",
@@ -114,111 +103,167 @@ Generate optimized trip packages based on user preferences.
     "family_friendly_hotel": true,
     "duration_range": [3, 5],
     "num_kids": 2,
-    "other": {
-      "poi": "National Gallery"
-    }
+    "prioritize_flight_time": false,
+    "prioritize_hotel_quality": false,
+    "prioritize_cost": true,
+    "other": { "poi": "National Gallery" }
   }
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
   "packages": [
     {
       "flight": {
         "airline": "British Airways",
-        "depart_time": "19:30",
-        "arrive_time": "21:45",
-        "cost": 180.0
+        "depart_time": "18:53",
+        "arrive_time": "21:04",
+        "cost": 101.0
       },
       "hotel": {
-        "name": "Hilton London",
-        "cost": 120.0,
-        "distance_from_poi_km": 1.2
+        "name": "Marriott London",
+        "cost": 106.0,
+        "distance_from_poi_km": 1.6
       },
-      "total_score": 85.5,
-      "total_cost": 1080.0,
-      "duration": 4,
-      "start_date": "2024-08-10",
-      "end_date": "2024-08-14"
+      "total_score": 72.9,
+      "total_cost": 1257.0,
+      "duration": 3,
+      "start_date": "2024-08-12",
+      "end_date": "2024-08-15"
     }
   ],
-  "user_input": {
-    "destination": "London",
-    "date_range": ["2024-08-10", "2024-08-15"],
-    "num_travelers": 3,
-    "preferences": {...}
-  },
-  "generated_at": "2024-01-15T10:30:00Z"
+  "user_input": {...},
+  "generated_at": "2024-08-02T20:20:58.215193",
+  "session_id": "744f43ab-8f5c-4f5f-b92f-167db8c00aa5"
 }
 ```
 
-### GET `/`
+#### **POST `/api/regenerate-trip`**
+Generate new trip variations for an existing session.
+
+**Request Body:**
+```json
+{
+  "session_id": "744f43ab-8f5c-4f5f-b92f-167db8c00aa5"
+}
+```
+
+**Response:** Same format as `/api/plan-trip`
+
+#### **GET `/api/trip-history/{user_id}`**
+Retrieve user's trip planning history.
+
+**Parameters:**
+- `user_id`: Firebase user ID
+- `limit`: Number of sessions to return (default: 10)
+
+**Response:**
+```json
+{
+  "sessions": [
+    {
+      "session_id": "744f43ab-8f5c-4f5f-b92f-167db8c00aa5",
+      "destination": "London",
+      "created_at": "2024-08-02T20:20:58.215193",
+      "regeneration_count": 3,
+      "generated_packages": [...]
+    }
+  ]
+}
+```
+
+#### **GET `/`**
 Health check endpoint.
 
-**Response**:
+**Response:**
 ```json
 {
   "message": "Holiday Booking Assistant API is running."
 }
 ```
 
-## 🧠 Trip Optimization Algorithm
+## 🧠 **Trip Optimization Algorithm**
 
-### Scoring Criteria (Total: 100 points)
+### **Enhanced Scoring System**
 
-| Criteria | Weight | Description |
-|----------|--------|-------------|
-| **Cost** | 40% | Lower costs receive higher scores |
-| **Flight Time** | 30% | Evening flights preferred if specified |
-| **Hotel Proximity** | 25% | Closer to POI gets higher scores |
-| **Family-Friendly** | 15% | Bonus for family-friendly hotels |
-| **Duration Bonus** | +10 | Longer stays (5+ days) get additional points |
+The system uses a dynamic weighted scoring algorithm that adapts based on user priorities:
 
-### Optimization Process
+#### **Default Weights**
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| **Cost** | 40% | Lower costs get higher scores |
+| **Flight Time** | 30% | Preferred flight times |
+| **Hotel Quality** | 25% | Proximity to POI and amenities |
+| **Duration** | 5% | Longer stays preferred |
 
-1. **Generate Travel Windows**
-   ```python
-   # Creates all valid 3-5 day combinations within date range
-   travel_windows = generate_travel_windows(start_date, end_date, duration_range)
-   ```
+#### **Priority-Based Weight Adjustment**
 
-2. **Flight Options Generation**
-   ```python
-   # 3 flight options per window with varying times and costs
-   flight_options = generate_flight_options(destination, window, preferences)
-   ```
+**💰 Cost Priority (60% cost weight)**
+- Cost: 60% (increased from 40%)
+- Flight Time: 20% (decreased from 30%)
+- Hotel Quality: 15% (decreased from 25%)
+- Duration: 5% (unchanged)
 
-3. **Hotel Options Generation**
-   ```python
-   # 3 hotel options with different locations and amenities
-   hotel_options = generate_hotel_options(destination, window, preferences)
-   ```
+**✈️ Flight Priority (50% flight weight)**
+- Cost: 25% (decreased from 40%)
+- Flight Time: 50% (increased from 30%)
+- Hotel Quality: 20% (decreased from 25%)
+- Duration: 5% (unchanged)
 
-4. **Package Creation**
-   ```python
-   # Combines flights and hotels into complete packages
-   packages = create_trip_packages(flights, hotels, window, num_travelers)
-   ```
+**🏨 Hotel Priority (50% hotel weight)**
+- Cost: 25% (decreased from 40%)
+- Flight Time: 20% (decreased from 30%)
+- Hotel Quality: 50% (increased from 25%)
+- Duration: 5% (unchanged)
 
-5. **Scoring & Ranking**
-   ```python
-   # Applies preference-based scoring algorithm
-   scored_packages = score_and_rank_packages(packages, preferences)
-   ```
+### **Scoring Details**
 
-## 📊 Data Models
+#### **Cost Scoring (0-100 scale)**
+```python
+max_expected_cost = 2000  # £2000 baseline
+cost_score = max(0, 100 - (total_cost / max_expected_cost) * 100)
+```
 
-### Request Models
+#### **Flight Time Scoring**
+- **Evening Flights (18:00-22:00)**: 100 points
+- **Morning Flights (06:00-12:00)**: 50 points
+- **Afternoon Flights (12:00-18:00)**: 30 points
+- **Night Flights (22:00-06:00)**: 20 points
+
+#### **Hotel Quality Scoring**
+- **≤ 1.0 km from POI**: 100 points
+- **≤ 2.0 km from POI**: 80 points
+- **≤ 3.0 km from POI**: 60 points
+- **> 3.0 km from POI**: 40 points
+- **Family-friendly bonus**: +20 points
+
+#### **Duration Scoring**
+- **5+ days**: 100 points
+- **4 days**: 80 points
+- **3 days**: 60 points
+- **< 3 days**: 40 points
+
+## 📊 **Data Models**
+
+### **Request Models**
+
+#### **TripPreferences**
 ```python
 class TripPreferences(BaseModel):
     prefer_evening_flights: bool = False
     family_friendly_hotel: bool = False
     duration_range: List[int] = Field(default=[3, 5])
     num_kids: int = Field(default=0)
+    prioritize_flight_time: bool = Field(default=False)
+    prioritize_hotel_quality: bool = Field(default=False)
+    prioritize_cost: bool = Field(default=False)
     other: Dict[str, Any] = Field(default_factory=dict)
+```
 
+#### **PlanTripRequest**
+```python
 class PlanTripRequest(BaseModel):
     destination: str
     date_range: List[date]
@@ -226,19 +271,10 @@ class PlanTripRequest(BaseModel):
     preferences: TripPreferences
 ```
 
-### Response Models
+### **Response Models**
+
+#### **TripPackage**
 ```python
-class FlightDetails(BaseModel):
-    airline: str
-    depart_time: str
-    arrive_time: str
-    cost: float
-
-class HotelDetails(BaseModel):
-    name: str
-    cost: float
-    distance_from_poi_km: float
-
 class TripPackage(BaseModel):
     flight: FlightDetails
     hotel: HotelDetails
@@ -249,9 +285,22 @@ class TripPackage(BaseModel):
     end_date: date
 ```
 
-### Database Models
+#### **PlanTripResponse**
+```python
+class PlanTripResponse(BaseModel):
+    packages: List[TripPackage]
+    user_input: dict
+    generated_at: datetime
+    session_id: str
+```
+
+### **Database Models**
+
+#### **TripRequestDB**
 ```python
 class TripRequestDB(BaseModel):
+    session_id: str
+    user_id: Optional[str] = None
     destination: str
     date_range: List[date]
     num_travelers: int
@@ -259,122 +308,135 @@ class TripRequestDB(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     generated_packages: List[Dict[str, Any]] = Field(default_factory=list)
     generated_at: Optional[datetime] = None
+    regeneration_count: int = Field(default=0)
 ```
 
-## 🔐 Authentication
+## 🔐 **Authentication Setup**
 
-### Firebase Admin SDK Setup
-```python
-# Initialize Firebase Admin SDK
-if not firebase_admin._apps:
-    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    if cred_path:
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-    else:
-        firebase_admin.initialize_app()
-```
+### **Firebase Admin SDK Configuration**
 
-### Token Validation
+1. **Download Service Account Key**
+   - Go to Firebase Console → Project Settings → Service Accounts
+   - Generate new private key
+   - Save as JSON file
+
+2. **Set Environment Variable**
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account-key.json"
+   ```
+
+3. **Enable Authentication**
+   ```python
+   import firebase_admin
+   from firebase_admin import credentials, auth
+   
+   cred = credentials.Certificate("path/to/service-account-key.json")
+   firebase_admin.initialize_app(cred)
+   ```
+
+### **Token Validation**
 ```python
 def verify_firebase_token(request: Request):
-    auth_header = request.headers.get("authorization")
-    if not auth_header or not auth_header.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid token")
     
-    id_token = auth_header.split(" ", 1)[1]
+    id_token = auth_header.split("Bearer ")[1]
     try:
-        decoded_token = firebase_auth.verify_id_token(id_token)
+        decoded_token = auth.verify_id_token(id_token)
         return decoded_token
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid Firebase ID token")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid token")
 ```
 
-## 🗄️ Database Integration
+## 🗄️ **Database Integration**
 
-### MongoDB Setup
+### **MongoDB Setup**
+
+#### **Connection Configuration**
 ```python
-# Async MongoDB client with Motor
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
 db = mongo_client["holiday_booking"]
 trip_requests_collection = db["trip_requests"]
 ```
 
-### Database Operations
+#### **Data Operations**
 ```python
-# Store trip request and results
-async def store_trip_request(trip_data: dict):
-    result = await trip_requests_collection.insert_one(trip_data)
-    return result.inserted_id
+# Insert new trip request
+await trip_requests_collection.insert_one(trip_db_to_mongo(trip_db))
 
-# Query historical requests
-async def get_trip_history(user_id: str, limit: int = 10):
-    cursor = trip_requests_collection.find(
-        {"user_id": user_id}
-    ).sort("created_at", -1).limit(limit)
-    return await cursor.to_list(length=limit)
+# Find existing session
+session = await trip_requests_collection.find_one({"session_id": session_id})
+
+# Update regeneration count
+await trip_requests_collection.update_one(
+    {"session_id": session_id},
+    {"$inc": {"regeneration_count": 1}}
+)
 ```
 
-## 🛠️ Development
-
-### Adding New Endpoints
-1. Define Pydantic models for request/response
-2. Create endpoint function with proper decorators
-3. Add authentication if required
-4. Implement business logic
-5. Add error handling
-
-### Example Endpoint
+### **Data Serialization**
 ```python
-@app.get("/api/trip-history/{user_id}")
-async def get_user_trip_history(user_id: str, limit: int = 10):
-    # Verify authentication
-    verify_firebase_token(request)
-    
-    # Query database
-    history = await get_trip_history(user_id, limit)
-    
-    return {"trips": history}
+def trip_db_to_mongo(trip_db: TripRequestDB):
+    doc = trip_db.dict()
+    doc["date_range"] = [d.isoformat() for d in doc["date_range"]]
+    if isinstance(doc["created_at"], datetime):
+        doc["created_at"] = doc["created_at"].isoformat()
+    if isinstance(doc["generated_at"], datetime):
+        doc["generated_at"] = doc["generated_at"].isoformat()
+    return doc
 ```
 
-### Error Handling
+## 🧪 **Development Guidelines**
+
+### **Code Structure**
+- **FastAPI**: Modern async web framework
+- **Pydantic**: Data validation and serialization
+- **Motor**: Async MongoDB driver
+- **Type Hints**: Full type annotation support
+
+### **Error Handling**
 ```python
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
-# Custom exceptions
-class TripOptimizationError(Exception):
-    pass
+# Custom error responses
+if not session:
+    raise HTTPException(status_code=404, detail="Session not found")
 
-# Error handling in endpoints
-try:
-    result = await optimize_trip(request_data)
-except TripOptimizationError as e:
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=str(e)
-    )
+# Validation errors
+except ValidationError as e:
+    raise HTTPException(status_code=422, detail=str(e))
 ```
 
-### Testing
-```python
-# Test endpoint
-def test_plan_trip():
-    client = TestClient(app)
-    response = client.post("/api/plan-trip", json=test_data)
-    assert response.status_code == 200
-    assert "packages" in response.json()
+### **Testing Strategy**
+- **Unit Tests**: Individual function testing
+- **Integration Tests**: API endpoint testing
+- **Database Tests**: MongoDB integration testing
+- **Authentication Tests**: Firebase token validation
 
-# Test optimization algorithm
-def test_trip_optimizer():
-    result = generate_trip_options(test_intent)
-    assert len(result) <= 3
-    assert all("total_score" in pkg for pkg in result)
+### **Performance Optimization**
+- **Async Operations**: Non-blocking database operations
+- **Connection Pooling**: Efficient MongoDB connections
+- **Caching**: Redis integration (planned)
+- **Load Balancing**: Horizontal scaling ready
+
+## 🚀 **Deployment**
+
+### **Production Setup**
+```bash
+# Install production dependencies
+pip install -r requirements.txt
+
+# Set production environment variables
+export MONGO_URI="mongodb+srv://..."
+export GOOGLE_APPLICATION_CREDENTIALS="..."
+
+# Start production server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-## 🚀 Deployment
-
-### Docker Deployment
+### **Docker Deployment**
 ```dockerfile
 FROM python:3.11-slim
 
@@ -388,61 +450,37 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### Railway/Render Deployment
-1. Connect GitHub repository
-2. Set environment variables:
-   - `MONGO_URI`
-   - `GOOGLE_APPLICATION_CREDENTIALS`
-3. Deploy automatically
-
-### AWS/Google Cloud Deployment
+### **Environment Variables**
 ```bash
-# Build and deploy
-gcloud app deploy app.yaml
+# Required
+MONGO_URI=mongodb://localhost:27017
+GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
 
-# Or with Docker
-docker build -t holiday-booking-api .
-docker run -p 8000:8000 holiday-booking-api
+# Optional
+LOG_LEVEL=INFO
+CORS_ORIGINS=http://localhost:3000,http://localhost:3002
 ```
 
-### Environment Variables for Production
-```env
-# Database
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/holiday_booking
+## 📊 **Monitoring & Logging**
 
-# Firebase
-GOOGLE_APPLICATION_CREDENTIALS=base64_encoded_service_account_json
+### **Performance Metrics**
+- **Response Times**: API endpoint performance tracking
+- **Database Queries**: MongoDB operation monitoring
+- **Error Rates**: Exception tracking and alerting
+- **User Activity**: Trip generation and regeneration metrics
 
-# Security
-CORS_ORIGINS=https://your-frontend-domain.com
-
-# Performance
-WORKERS=4
-MAX_CONNECTIONS=1000
-```
-
-## 📈 Monitoring & Logging
-
-### Logging Configuration
+### **Logging Configuration**
 ```python
 import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# Log API requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Request: {request.method} {request.url}")
-    response = await call_next(request)
-    logger.info(f"Response: {response.status_code}")
-    return response
 ```
 
-### Health Checks
+### **Health Checks**
 ```python
 @app.get("/health")
 async def health_check():
@@ -453,29 +491,74 @@ async def health_check():
     }
 ```
 
-## 🐛 Troubleshooting
+## 🔮 **Future Enhancements**
 
-### Common Issues
-1. **MongoDB Connection**: Check MONGO_URI and network connectivity
-2. **Firebase Auth**: Verify service account credentials
-3. **CORS Errors**: Ensure frontend URL is in CORS origins
-4. **Import Errors**: Check Python path and virtual environment
+### **Phase 2 Features**
+- **Real API Integration**: Live flight and hotel data
+- **Payment Processing**: Secure payment gateway integration
+- **Booking Confirmation**: Email notifications and confirmations
+- **Advanced Analytics**: User behavior and preference analysis
 
-### Debug Mode
+### **Technical Improvements**
+- **Redis Caching**: Performance optimization
+- **Rate Limiting**: API usage control
+- **GraphQL**: Flexible query interface
+- **Microservices**: Service decomposition
+
+### **Advanced Features**
+- **Multi-destination Trips**: Complex itinerary planning
+- **Group Optimization**: Group booking algorithms
+- **Seasonal Pricing**: Dynamic pricing analysis
+- **AI Recommendations**: Machine learning integration
+
+## 🆘 **Troubleshooting**
+
+### **Common Issues**
+
+#### **MongoDB Connection**
+```bash
+# Check MongoDB status
+sudo systemctl status mongod
+
+# Test connection
+python3 -c "import motor; print('MongoDB OK')"
+```
+
+#### **Firebase Authentication**
+```bash
+# Verify credentials
+python3 -c "import firebase_admin; print('Firebase OK')"
+
+# Check environment variable
+echo $GOOGLE_APPLICATION_CREDENTIALS
+```
+
+#### **CORS Issues**
+```python
+# Update CORS origins
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3002",
+    "https://yourdomain.com"
+]
+```
+
+### **Debug Mode**
 ```bash
 # Enable debug logging
 export LOG_LEVEL=DEBUG
 python3 -m uvicorn app.main:app --reload --log-level debug
 ```
 
-## 📚 Resources
+### **Performance Analysis**
+```bash
+# Install profiling tools
+pip install py-spy
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Motor (Async MongoDB)](https://motor.readthedocs.io/)
-- [Firebase Admin SDK](https://firebase.google.com/docs/admin)
-- [Pydantic Models](https://pydantic-docs.helpmanual.io/)
-- [Uvicorn Server](https://www.uvicorn.org/)
+# Profile application
+py-spy top -- python3 -m uvicorn app.main:app
+```
 
 ---
 
-**Built with ❤️ using FastAPI, MongoDB, and Firebase Admin SDK** 
+**Built with ❤️ using FastAPI, Python, and MongoDB** 
