@@ -9,6 +9,8 @@ import os
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 from .trip_optimizer import generate_trip_options
+from .travel_apis import TravelAPIManager
+from .loyalty_optimizer import evaluate_loyalty_value, list_available_programs
 
 # Initialize Firebase Admin SDK (only once)
 if not firebase_admin._apps:
@@ -309,3 +311,69 @@ async def get_trip_history(user_id: str, limit: int = 10):
             session["generated_at"] = datetime.fromisoformat(session["generated_at"])
     
     return {"sessions": sessions}
+
+@app.post("/api/search-real-trip")
+async def search_real_trip(
+    origin: str = Body(..., embed=True),
+    destination: str = Body(..., embed=True),
+    departure_date: str = Body(..., embed=True),
+    return_date: Optional[str] = Body(None, embed=True),
+    passengers: int = Body(1, embed=True),
+    guests: int = Body(1, embed=True),
+    user_id: Optional[str] = Body(None, embed=True),
+    loyalty_programs: Optional[List[str]] = Body(None, embed=True)
+):
+    """Search for real trip options using travel APIs"""
+    
+    try:
+        # Parse dates
+        dep_date = date.fromisoformat(departure_date)
+        ret_date = date.fromisoformat(return_date) if return_date else None
+        
+        # Initialize travel API manager
+        api_manager = TravelAPIManager()
+        
+        # Search for complete trip
+        result = await api_manager.search_complete_trip(
+            origin=origin,
+            destination=destination,
+            departure_date=dep_date,
+            return_date=ret_date,
+            passengers=passengers,
+            guests=guests,
+            user_id=user_id,
+            loyalty_programs=loyalty_programs or []
+        )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@app.post("/api/evaluate-loyalty")
+async def evaluate_loyalty(
+    cash_price: float = Body(..., embed=True),
+    points_price: int = Body(..., embed=True),
+    loyalty_program: str = Body("ihg", embed=True),
+    user_points_balance: Optional[int] = Body(None, embed=True)
+):
+    """Evaluate loyalty points value for a booking"""
+    
+    try:
+        result = evaluate_loyalty_value(
+            cash_price=cash_price,
+            points_price=points_price,
+            point_value=0,  # Will be calculated automatically
+            loyalty_program=loyalty_program,
+            user_points_balance=user_points_balance
+        )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+
+@app.get("/api/loyalty-programs")
+async def get_loyalty_programs():
+    """Get list of available loyalty programs"""
+    return {"programs": list_available_programs()}
