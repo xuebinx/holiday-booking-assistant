@@ -11,6 +11,7 @@ from firebase_admin import credentials, auth as firebase_auth
 from .trip_optimizer import generate_trip_options
 from .travel_apis import TravelAPIManager
 from .loyalty_optimizer import evaluate_loyalty_value, list_available_programs
+from .trip_parser import trip_parser
 
 # Initialize Firebase Admin SDK (only once)
 if not firebase_admin._apps:
@@ -72,10 +73,10 @@ class TripPreferences(BaseModel):
     other: Dict[str, Any] = Field(default_factory=dict)
 
 class PlanTripRequest(BaseModel):
-    destination: str
-    date_range: List[date]  # [start, end]
-    num_travelers: int
-    preferences: TripPreferences
+    user_input: str = Field(description="Natural language trip description")
+    date_range: Optional[List[date]] = Field(default=None)  # [start, end]
+    num_travelers: Optional[int] = Field(default=None)
+    preferences: Optional[TripPreferences] = Field(default=None)
 
 class FlightDetails(BaseModel):
     airline: str
@@ -107,6 +108,7 @@ class PlanTripResponse(BaseModel):
 class TripRequestDB(BaseModel):
     session_id: str = Field(description="Unique session identifier")
     user_id: Optional[str] = Field(default=None, description="Firebase user ID")
+    origin: str = Field(default="LHR", description="Origin airport/city")
     destination: str
     date_range: List[date]
     num_travelers: int
@@ -126,20 +128,34 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
     import uuid
     session_id = str(uuid.uuid4())
     
-    # Parse and prepare trip intent with enhanced preferences
+    # Parse natural language input
+    parsed_data = trip_parser.parse_trip_request(payload.user_input)
+    
+    # Use parsed data or fallback to provided data
+    origin = parsed_data['origin']
+    destination = parsed_data['destination']
+    date_range = payload.date_range or [parsed_data['start_date'], parsed_data['end_date']] if parsed_data['start_date'] and parsed_data['end_date'] else [date(2024, 8, 10), date(2024, 8, 15)]
+    num_travelers = payload.num_travelers or parsed_data['num_travelers']
+    
+    # Merge preferences
+    parsed_prefs = parsed_data['preferences']
+    user_prefs = payload.preferences or TripPreferences()
+    
     trip_intent = {
-        'destination': payload.destination,
-        'date_range': payload.date_range,
-        'num_travelers': payload.num_travelers,
+        'origin': origin,
+        'destination': destination,
+        'date_range': date_range,
+        'num_travelers': num_travelers,
         'preferences': {
-            'prefer_evening_flights': payload.preferences.prefer_evening_flights,
-            'family_friendly_hotel': payload.preferences.family_friendly_hotel,
-            'duration_range': payload.preferences.duration_range,
-            'num_kids': payload.preferences.num_kids,
-            'prioritize_flight_time': payload.preferences.prioritize_flight_time,
-            'prioritize_hotel_quality': payload.preferences.prioritize_hotel_quality,
-            'prioritize_cost': payload.preferences.prioritize_cost,
-            **payload.preferences.other
+            'prefer_evening_flights': user_prefs.prefer_evening_flights or parsed_prefs['prefer_evening_flights'],
+            'family_friendly_hotel': user_prefs.family_friendly_hotel or parsed_prefs['family_friendly_hotel'],
+            'duration_range': user_prefs.duration_range or parsed_prefs['duration_range'],
+            'num_kids': user_prefs.num_kids or parsed_prefs['num_kids'],
+            'prioritize_flight_time': user_prefs.prioritize_flight_time,
+            'prioritize_hotel_quality': user_prefs.prioritize_hotel_quality,
+            'prioritize_cost': user_prefs.prioritize_cost,
+            **parsed_prefs['other'],
+            **(user_prefs.other or {})
         }
     }
     
@@ -175,9 +191,10 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
     # Store request and results in MongoDB
     trip_db = TripRequestDB(
         session_id=session_id,
-        destination=payload.destination,
-        date_range=payload.date_range,
-        num_travelers=payload.num_travelers,
+        origin=origin,
+        destination=destination,
+        date_range=date_range,
+        num_travelers=num_travelers,
         preferences=trip_intent['preferences'],
         generated_packages=[pkg.dict() for pkg in packages],
         generated_at=generated_at

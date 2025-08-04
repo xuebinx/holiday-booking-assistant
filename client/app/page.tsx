@@ -49,19 +49,9 @@ export default function Home() {
     setError("");
     setResults(null);
     
-    // Use user input as destination
+    // Send natural language input for parsing
     const mockRequest = {
-      destination: input, // 用户输入的目的地
-      date_range: ["2024-08-10", "2024-08-15"],
-      num_travelers: 3,
-      preferences: {
-        prefer_evening_flights: true,
-        family_friendly_hotel: true,
-        duration_range: [3, 5],
-        num_kids: 2,
-        ...priorities, // Include user priorities
-        other: { poi: "National Gallery" },
-      },
+      user_input: input, // Send the raw user input for backend parsing
     };
     try {
       let idToken = undefined;
@@ -193,7 +183,7 @@ export default function Home() {
             <input
               className="flex-1 border-2 border-gray-200 rounded-2xl px-6 py-4 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400 text-gray-900 bg-white/90 backdrop-blur-sm placeholder-gray-500 text-lg transition-all duration-300 shadow-lg"
               type="text"
-              placeholder="Describe your dream vacation..."
+              placeholder="Describe your dream vacation... (e.g., 'I want to visit Tokyo from London for 5 days in August with 2 kids')"
               value={input}
               onChange={e => setInput(e.target.value)}
               disabled={loading}
