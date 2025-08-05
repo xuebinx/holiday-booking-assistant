@@ -9,17 +9,39 @@ interface TripPackage {
     depart_time: string;
     arrive_time: string;
     cost: number;
+    booking_url: string;
   };
   hotel: {
     name: string;
     cost: number;
     distance_from_poi_km: number;
+    booking_url: string;
   };
   total_score: number;
   total_cost: number;
   duration: number;
   start_date: string;
   end_date: string;
+  loyalty_analysis?: {
+    cash_price: number;
+    hotel_loyalty_options: Array<{
+      program: string;
+      program_code: string;
+      points_needed: number;
+      points_available: number;
+      recommendation: string;
+      savings: number;
+      effective_value: number;
+    }>;
+    best_recommendation?: {
+      program: string;
+      program_code: string;
+      points_needed: number;
+      recommendation: string;
+      savings: number;
+    };
+    user_balances: Record<string, number>;
+  };
 }
 
 interface PlanTripResponse {
@@ -35,6 +57,7 @@ export default function Home() {
   const [results, setResults] = useState<PlanTripResponse | null>(null);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
   
   // Priority toggles
   const [priorities, setPriorities] = useState({
@@ -350,6 +373,18 @@ export default function Home() {
                           <span className="text-blue-500">→</span>
                           <span>{pkg.flight.arrive_time}</span>
                         </div>
+                        <div className="mt-2">
+                          <a 
+                            href={pkg.flight.booking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                          >
+                            <span>🔗</span>
+                            <span>Book Flight</span>
+                            <span className="text-xs">↗</span>
+                          </a>
+                        </div>
                       </div>
                     </div>
 
@@ -372,6 +407,95 @@ export default function Home() {
                           <span>📍</span>
                           <span>{pkg.hotel.distance_from_poi_km} km from POI</span>
                         </div>
+                        <div className="mt-2">
+                          <a 
+                            href={pkg.hotel.booking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center space-x-1 text-green-600 hover:text-green-800 text-sm font-medium transition-colors"
+                          >
+                            <span>🔗</span>
+                            <span>Book Hotel</span>
+                            <span className="text-xs">↗</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Loyalty Comparison */}
+                    <div className="p-6 border-t border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <span className="text-amber-600 text-lg">💎</span>
+                          </div>
+                          <span className="font-semibold text-gray-800">Loyalty Options</span>
+                        </div>
+                        <button 
+                          onClick={() => setShowLoyaltyModal(true)}
+                          className="text-sm text-amber-600 hover:text-amber-700 underline"
+                        >
+                          Update Balances
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {/* Cash Option */}
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-green-600">💰</span>
+                              <span className="font-medium text-gray-800">Pay Cash</span>
+                            </div>
+                            <span className="font-bold text-gray-900">{formatCurrency(pkg.total_cost)}</span>
+                          </div>
+                        </div>
+
+                        {/* Points Options */}
+                        {pkg.loyalty_analysis?.hotel_loyalty_options.map((option, idx) => (
+                          <div key={idx} className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-blue-600">🎫</span>
+                                <span className="font-medium text-gray-800">Use Points</span>
+                                <span className="text-xs text-gray-500">({option.program})</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-blue-600">{option.points_needed.toLocaleString()} pts</div>
+                                <div className="text-xs text-gray-500">Value: {formatCurrency(option.points_needed * option.effective_value)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Recommendation */}
+                        {pkg.loyalty_analysis?.best_recommendation && (
+                          <div className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg p-3 text-white">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span>💡</span>
+                                <span className="font-semibold">Recommendation</span>
+                              </div>
+                              <span className="font-bold">{pkg.loyalty_analysis.best_recommendation.recommendation}</span>
+                            </div>
+                            <div className="text-sm text-emerald-100 mt-1">
+                              {pkg.loyalty_analysis.best_recommendation.savings > 0 
+                                ? `Save ${formatCurrency(pkg.loyalty_analysis.best_recommendation.savings)} with ${pkg.loyalty_analysis.best_recommendation.program}`
+                                : `Best value with ${pkg.loyalty_analysis.best_recommendation.program}`
+                              }
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No Loyalty Options */}
+                        {!pkg.loyalty_analysis?.hotel_loyalty_options.length && (
+                          <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500">ℹ️</span>
+                              <span className="text-sm text-gray-600">No loyalty options available</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -388,6 +512,115 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Loyalty Balance Modal */}
+      {showLoyaltyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">💎 Loyalty Program Balances</h3>
+              <button 
+                onClick={() => setShowLoyaltyModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 mb-4">
+                Update your loyalty program balances to get personalized recommendations.
+              </div>
+              
+              {/* IHG */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold text-gray-800">IHG Rewards</span>
+                  <span className="text-sm text-gray-500">InterContinental Hotels Group</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="number" 
+                    placeholder="Points balance"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    defaultValue="25000"
+                  />
+                  <span className="text-sm text-gray-500">points</span>
+                </div>
+              </div>
+
+              {/* Marriott */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold text-gray-800">Marriott Bonvoy</span>
+                  <span className="text-sm text-gray-500">Marriott International</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="number" 
+                    placeholder="Points balance"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    defaultValue="15000"
+                  />
+                  <span className="text-sm text-gray-500">points</span>
+                </div>
+              </div>
+
+              {/* Hilton */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold text-gray-800">Hilton Honors</span>
+                  <span className="text-sm text-gray-500">Hilton Worldwide</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="number" 
+                    placeholder="Points balance"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    defaultValue="30000"
+                  />
+                  <span className="text-sm text-gray-500">points</span>
+                </div>
+              </div>
+
+              {/* American Airlines */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold text-gray-800">American Airlines</span>
+                  <span className="text-sm text-gray-500">AAdvantage</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="number" 
+                    placeholder="Miles balance"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    defaultValue="45000"
+                  />
+                  <span className="text-sm text-gray-500">miles</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button 
+                onClick={() => setShowLoyaltyModal(false)}
+                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  // TODO: Save loyalty balances
+                  setShowLoyaltyModal(false);
+                }}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors"
+              >
+                Save & Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

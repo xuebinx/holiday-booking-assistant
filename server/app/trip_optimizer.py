@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from datetime import date, timedelta
 import random
+from .loyalty_optimizer import evaluate_loyalty_value, LOYALTY_PROGRAMS
 
 def generate_trip_options(trip_intent: dict) -> List[dict]:
     """
@@ -65,9 +66,85 @@ def generate_trip_options(trip_intent: dict) -> List[dict]:
     scored_options.sort(key=lambda x: x['total_score'], reverse=True)
     return scored_options[:3]
 
+def generate_loyalty_analysis(total_cost: float, hotel_cost: float) -> dict:
+    """Generate loyalty program analysis for the trip."""
+    # Mock user loyalty balances (in real app, this would come from user profile)
+    user_balances = {
+        'ihg': 25000,
+        'marriott': 15000,
+        'hilton': 30000,
+        'american_airlines': 45000
+    }
+    
+    # Analyze hotel loyalty options
+    hotel_loyalty_options = []
+    
+    # IHG analysis
+    ihg_points_needed = int(hotel_cost * 10)  # Rough conversion: £1 = 10 points
+    if ihg_points_needed <= user_balances['ihg']:
+        ihg_analysis = evaluate_loyalty_value(
+            cash_price=hotel_cost,
+            points_price=ihg_points_needed,
+            point_value=0.012,  # IHG average point value
+            loyalty_program='ihg',
+            user_points_balance=user_balances['ihg']
+        )
+        hotel_loyalty_options.append({
+            'program': 'IHG Rewards',
+            'program_code': 'ihg',
+            'points_needed': ihg_points_needed,
+            'points_available': user_balances['ihg'],
+            'recommendation': ihg_analysis['recommendation'],
+            'savings': ihg_analysis.get('savings', 0),
+            'effective_value': ihg_analysis['effective_value_per_point']
+        })
+    
+    # Marriott analysis
+    marriott_points_needed = int(hotel_cost * 8)  # Rough conversion: £1 = 8 points
+    if marriott_points_needed <= user_balances['marriott']:
+        marriott_analysis = evaluate_loyalty_value(
+            cash_price=hotel_cost,
+            points_price=marriott_points_needed,
+            point_value=0.015,  # Marriott average point value
+            loyalty_program='marriott',
+            user_points_balance=user_balances['marriott']
+        )
+        hotel_loyalty_options.append({
+            'program': 'Marriott Bonvoy',
+            'program_code': 'marriott',
+            'points_needed': marriott_points_needed,
+            'points_available': user_balances['marriott'],
+            'recommendation': marriott_analysis['recommendation'],
+            'savings': marriott_analysis.get('savings', 0),
+            'effective_value': marriott_analysis['effective_value_per_point']
+        })
+    
+    # Find best recommendation
+    best_option = None
+    if hotel_loyalty_options:
+        best_option = max(hotel_loyalty_options, key=lambda x: x['savings'])
+    
+    return {
+        'cash_price': total_cost,
+        'hotel_loyalty_options': hotel_loyalty_options,
+        'best_recommendation': best_option,
+        'user_balances': user_balances
+    }
+
 def generate_flight_options(destination: str, window: dict, preferences: dict) -> List[dict]:
     """Generate mock flight options."""
-    airlines = ['British Airways', 'EasyJet', 'Ryanair', 'Virgin Atlantic', 'Lufthansa']
+    airlines = [
+        {'name': 'British Airways', 'url': 'https://www.britishairways.com'},
+        {'name': 'EasyJet', 'url': 'https://www.easyjet.com'},
+        {'name': 'Ryanair', 'url': 'https://www.ryanair.com'},
+        {'name': 'Virgin Atlantic', 'url': 'https://www.virginatlantic.com'},
+        {'name': 'Lufthansa', 'url': 'https://www.lufthansa.com'},
+        {'name': 'Emirates', 'url': 'https://www.emirates.com'},
+        {'name': 'Qatar Airways', 'url': 'https://www.qatarairways.com'},
+        {'name': 'American Airlines', 'url': 'https://www.aa.com'},
+        {'name': 'Delta Air Lines', 'url': 'https://www.delta.com'},
+        {'name': 'United Airlines', 'url': 'https://www.united.com'}
+    ]
     flights = []
     
     for i in range(3):  # Generate 3 flight options
@@ -86,11 +163,13 @@ def generate_flight_options(destination: str, window: dict, preferences: dict) -
         if destination.lower() in ['london', 'paris', 'rome']:
             base_cost += random.randint(50, 100)
         
+        airline = random.choice(airlines)
         flight = {
-            'airline': random.choice(airlines),
+            'airline': airline['name'],
             'depart_time': depart_time,
             'arrive_time': arrive_time,
-            'cost': base_cost
+            'cost': base_cost,
+            'booking_url': airline['url']
         }
         flights.append(flight)
     
@@ -98,7 +177,18 @@ def generate_flight_options(destination: str, window: dict, preferences: dict) -
 
 def generate_hotel_options(destination: str, window: dict, preferences: dict) -> List[dict]:
     """Generate mock hotel options."""
-    hotel_chains = ['Hilton', 'Marriott', 'Holiday Inn', 'Premier Inn', 'Travelodge']
+    hotel_chains = [
+        {'name': 'Hilton', 'url': 'https://www.hilton.com'},
+        {'name': 'Marriott', 'url': 'https://www.marriott.com'},
+        {'name': 'Holiday Inn', 'url': 'https://www.ihg.com/holidayinn'},
+        {'name': 'Premier Inn', 'url': 'https://www.premierinn.com'},
+        {'name': 'Travelodge', 'url': 'https://www.travelodge.co.uk'},
+        {'name': 'InterContinental', 'url': 'https://www.ihg.com/intercontinental'},
+        {'name': 'Hyatt', 'url': 'https://www.hyatt.com'},
+        {'name': 'Radisson', 'url': 'https://www.radissonhotels.com'},
+        {'name': 'Best Western', 'url': 'https://www.bestwestern.com'},
+        {'name': 'Comfort Inn', 'url': 'https://www.choicehotels.com/comfort'}
+    ]
     hotels = []
     
     for i in range(3):  # Generate 3 hotel options
@@ -115,11 +205,13 @@ def generate_hotel_options(destination: str, window: dict, preferences: dict) ->
         # Distance from POI (Points of Interest)
         distance_from_poi = random.uniform(0.5, 5.0)
         
+        hotel_chain = random.choice(hotel_chains)
         hotel = {
-            'name': f"{random.choice(hotel_chains)} {destination}",
+            'name': f"{hotel_chain['name']} {destination}",
             'cost': base_cost,
             'distance_from_poi_km': round(distance_from_poi, 1),
-            'family_friendly': is_family_friendly
+            'family_friendly': is_family_friendly,
+            'booking_url': hotel_chain['url']
         }
         hotels.append(hotel)
     
@@ -134,6 +226,9 @@ def create_trip_package(flight: dict, hotel: dict, window: dict, num_travelers: 
     hotel_total = hotel['cost'] * duration * num_travelers
     total_cost = flight_total + hotel_total
     
+    # Generate loyalty analysis
+    loyalty_analysis = generate_loyalty_analysis(total_cost, hotel_total)
+    
     return {
         'flight': flight,
         'hotel': hotel,
@@ -141,7 +236,8 @@ def create_trip_package(flight: dict, hotel: dict, window: dict, num_travelers: 
         'duration': duration,
         'start_date': window['start_date'],
         'end_date': window['end_date'],
-        'num_travelers': num_travelers
+        'num_travelers': num_travelers,
+        'loyalty_analysis': loyalty_analysis
     }
 
 def calculate_score(option: dict, preferences: dict) -> float:

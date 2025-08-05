@@ -83,11 +83,13 @@ class FlightDetails(BaseModel):
     depart_time: str
     arrive_time: str
     cost: float
+    booking_url: str
 
 class HotelDetails(BaseModel):
     name: str
     cost: float
     distance_from_poi_km: float
+    booking_url: str
 
 class TripPackage(BaseModel):
     flight: FlightDetails
@@ -170,12 +172,14 @@ async def plan_trip(request: Request, payload: PlanTripRequest = Body(...)):
                 airline=option['flight']['airline'],
                 depart_time=option['flight']['depart_time'],
                 arrive_time=option['flight']['arrive_time'],
-                cost=option['flight']['cost']
+                cost=option['flight']['cost'],
+                booking_url=option['flight']['booking_url']
             ),
             hotel=HotelDetails(
                 name=option['hotel']['name'],
                 cost=option['hotel']['cost'],
-                distance_from_poi_km=option['hotel']['distance_from_poi_km']
+                distance_from_poi_km=option['hotel']['distance_from_poi_km'],
+                booking_url=option['hotel']['booking_url']
             ),
             total_score=option['total_score'],
             total_cost=option['total_cost'],
@@ -265,12 +269,14 @@ async def regenerate_trip(request: Request, session_id: str = Body(..., embed=Tr
                 airline=option['flight']['airline'],
                 depart_time=option['flight']['depart_time'],
                 arrive_time=option['flight']['arrive_time'],
-                cost=option['flight']['cost']
+                cost=option['flight']['cost'],
+                booking_url=option['flight']['booking_url']
             ),
             hotel=HotelDetails(
                 name=option['hotel']['name'],
                 cost=option['hotel']['cost'],
-                distance_from_poi_km=option['hotel']['distance_from_poi_km']
+                distance_from_poi_km=option['hotel']['distance_from_poi_km'],
+                booking_url=option['hotel']['booking_url']
             ),
             total_score=option['total_score'],
             total_cost=option['total_cost'],
