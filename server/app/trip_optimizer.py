@@ -131,21 +131,80 @@ def generate_loyalty_analysis(total_cost: float, hotel_cost: float) -> dict:
         'user_balances': user_balances
     }
 
+def generate_flight_booking_url(base_url: str, search_path: str, start_date: date, end_date: date, destination: str) -> str:
+    """Generate dynamic flight booking URL with search parameters."""
+    # Format dates for URL parameters
+    departure_date = start_date.strftime('%Y-%m-%d')
+    return_date = end_date.strftime('%Y-%m-%d')
+    
+    # Common origin airports (default to LHR for London)
+    origin_airports = {
+        'london': 'LHR',
+        'paris': 'CDG', 
+        'new york': 'JFK',
+        'tokyo': 'NRT',
+        'sydney': 'SYD',
+        'dubai': 'DXB',
+        'singapore': 'SIN'
+    }
+    
+    # Get origin airport code
+    origin = origin_airports.get(destination.lower(), 'LHR')
+    
+    # Use real booking aggregator URLs that actually work
+    if 'britishairways' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'easyjet' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'ryanair' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'virginatlantic' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'lufthansa' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'emirates' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'qatarairways' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'aa.com' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'delta.com' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    elif 'united.com' in base_url:
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+    else:
+        # Fallback to Skyscanner
+        return f"https://www.skyscanner.net/flights/{origin}/{destination.upper()}/{departure_date}/{return_date}/"
+
+def generate_hotel_booking_url(base_url: str, search_path: str, start_date: date, end_date: date, destination: str) -> str:
+    """Generate dynamic hotel booking URL with search parameters."""
+    # Format dates for URL parameters
+    check_in = start_date.strftime('%Y-%m-%d')
+    check_out = end_date.strftime('%Y-%m-%d')
+    
+    # Use real booking aggregator URLs that actually work
+    # Booking.com format: https://www.booking.com/search.html?ss=destination&checkin=date&checkout=date
+    return f"https://www.booking.com/search.html?ss={destination}&checkin={check_in}&checkout={check_out}"
+
 def generate_flight_options(destination: str, window: dict, preferences: dict) -> List[dict]:
     """Generate mock flight options."""
     airlines = [
-        {'name': 'British Airways', 'url': 'https://www.britishairways.com'},
-        {'name': 'EasyJet', 'url': 'https://www.easyjet.com'},
-        {'name': 'Ryanair', 'url': 'https://www.ryanair.com'},
-        {'name': 'Virgin Atlantic', 'url': 'https://www.virginatlantic.com'},
-        {'name': 'Lufthansa', 'url': 'https://www.lufthansa.com'},
-        {'name': 'Emirates', 'url': 'https://www.emirates.com'},
-        {'name': 'Qatar Airways', 'url': 'https://www.qatarairways.com'},
-        {'name': 'American Airlines', 'url': 'https://www.aa.com'},
-        {'name': 'Delta Air Lines', 'url': 'https://www.delta.com'},
-        {'name': 'United Airlines', 'url': 'https://www.united.com'}
+        {'name': 'British Airways', 'base_url': 'https://www.britishairways.com', 'search_path': '/en-gb/flights'},
+        {'name': 'EasyJet', 'base_url': 'https://www.easyjet.com', 'search_path': '/en/flights'},
+        {'name': 'Ryanair', 'base_url': 'https://www.ryanair.com', 'search_path': '/en/cheap-flights'},
+        {'name': 'Virgin Atlantic', 'base_url': 'https://www.virginatlantic.com', 'search_path': '/en/flights'},
+        {'name': 'Lufthansa', 'base_url': 'https://www.lufthansa.com', 'search_path': '/en/flights'},
+        {'name': 'Emirates', 'base_url': 'https://www.emirates.com', 'search_path': '/english/flights'},
+        {'name': 'Qatar Airways', 'base_url': 'https://www.qatarairways.com', 'search_path': '/en/flights'},
+        {'name': 'American Airlines', 'base_url': 'https://www.aa.com', 'search_path': '/flights'},
+        {'name': 'Delta Air Lines', 'base_url': 'https://www.delta.com', 'search_path': '/flights'},
+        {'name': 'United Airlines', 'base_url': 'https://www.united.com', 'search_path': '/flights'}
     ]
     flights = []
+    
+    # Get dates for URL parameters
+    start_date = window['start_date']
+    end_date = window['end_date']
     
     for i in range(3):  # Generate 3 flight options
         # Determine departure time based on preferences
@@ -164,12 +223,22 @@ def generate_flight_options(destination: str, window: dict, preferences: dict) -
             base_cost += random.randint(50, 100)
         
         airline = random.choice(airlines)
+        
+        # Generate dynamic booking URL with search parameters
+        booking_url = generate_flight_booking_url(
+            airline['base_url'], 
+            airline['search_path'],
+            start_date, 
+            end_date, 
+            destination
+        )
+        
         flight = {
             'airline': airline['name'],
             'depart_time': depart_time,
             'arrive_time': arrive_time,
             'cost': base_cost,
-            'booking_url': airline['url']
+            'booking_url': booking_url
         }
         flights.append(flight)
     
@@ -178,18 +247,22 @@ def generate_flight_options(destination: str, window: dict, preferences: dict) -
 def generate_hotel_options(destination: str, window: dict, preferences: dict) -> List[dict]:
     """Generate mock hotel options."""
     hotel_chains = [
-        {'name': 'Hilton', 'url': 'https://www.hilton.com'},
-        {'name': 'Marriott', 'url': 'https://www.marriott.com'},
-        {'name': 'Holiday Inn', 'url': 'https://www.ihg.com/holidayinn'},
-        {'name': 'Premier Inn', 'url': 'https://www.premierinn.com'},
-        {'name': 'Travelodge', 'url': 'https://www.travelodge.co.uk'},
-        {'name': 'InterContinental', 'url': 'https://www.ihg.com/intercontinental'},
-        {'name': 'Hyatt', 'url': 'https://www.hyatt.com'},
-        {'name': 'Radisson', 'url': 'https://www.radissonhotels.com'},
-        {'name': 'Best Western', 'url': 'https://www.bestwestern.com'},
-        {'name': 'Comfort Inn', 'url': 'https://www.choicehotels.com/comfort'}
+        {'name': 'Hilton', 'base_url': 'https://www.hilton.com', 'search_path': '/search'},
+        {'name': 'Marriott', 'base_url': 'https://www.marriott.com', 'search_path': '/search'},
+        {'name': 'Holiday Inn', 'base_url': 'https://www.ihg.com', 'search_path': '/holidayinn/search'},
+        {'name': 'Premier Inn', 'base_url': 'https://www.premierinn.com', 'search_path': '/search'},
+        {'name': 'Travelodge', 'base_url': 'https://www.travelodge.co.uk', 'search_path': '/search'},
+        {'name': 'InterContinental', 'base_url': 'https://www.ihg.com', 'search_path': '/intercontinental/search'},
+        {'name': 'Hyatt', 'base_url': 'https://www.hyatt.com', 'search_path': '/search'},
+        {'name': 'Radisson', 'base_url': 'https://www.radissonhotels.com', 'search_path': '/search'},
+        {'name': 'Best Western', 'base_url': 'https://www.bestwestern.com', 'search_path': '/search'},
+        {'name': 'Comfort Inn', 'base_url': 'https://www.choicehotels.com', 'search_path': '/comfort/search'}
     ]
     hotels = []
+    
+    # Get dates for URL parameters
+    start_date = window['start_date']
+    end_date = window['end_date']
     
     for i in range(3):  # Generate 3 hotel options
         # Determine if family-friendly based on preferences
@@ -206,12 +279,22 @@ def generate_hotel_options(destination: str, window: dict, preferences: dict) ->
         distance_from_poi = random.uniform(0.5, 5.0)
         
         hotel_chain = random.choice(hotel_chains)
+        
+        # Generate dynamic booking URL with search parameters
+        booking_url = generate_hotel_booking_url(
+            hotel_chain['base_url'],
+            hotel_chain['search_path'],
+            start_date,
+            end_date,
+            destination
+        )
+        
         hotel = {
             'name': f"{hotel_chain['name']} {destination}",
             'cost': base_cost,
             'distance_from_poi_km': round(distance_from_poi, 1),
             'family_friendly': is_family_friendly,
-            'booking_url': hotel_chain['url']
+            'booking_url': booking_url
         }
         hotels.append(hotel)
     
