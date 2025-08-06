@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Body, HTTPException, status, Request
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import motor.motor_asyncio
 import os
 import firebase_admin
@@ -12,6 +12,7 @@ from .trip_optimizer import generate_trip_options
 from .travel_apis import TravelAPIManager
 from .loyalty_optimizer import evaluate_loyalty_value, list_available_programs
 from .trip_parser import trip_parser
+from .ai_travel_agent_enhanced import enhanced_ai_travel_agent
 
 # Initialize Firebase Admin SDK (only once)
 if not firebase_admin._apps:
@@ -399,4 +400,64 @@ async def evaluate_loyalty(
 @app.get("/api/loyalty-programs")
 async def get_loyalty_programs():
     """Get list of available loyalty programs"""
-    return {"programs": list_available_programs()}
+    programs = list_available_programs()
+    return {"programs": programs}
+
+@app.post("/api/search-with-ai")
+async def search_with_ai(
+    origin: str = Body(..., embed=True),
+    destination: str = Body(..., embed=True),
+    departure_date: str = Body(..., embed=True),
+    return_date: Optional[str] = Body(None, embed=True),
+    passengers: int = Body(1, embed=True),
+    guests: int = Body(1, embed=True),
+    use_ai: bool = Body(True, embed=True)
+):
+    """
+    Search for flights and hotels using AI agent
+    """
+    try:
+        # Parse dates
+        dep_date = datetime.strptime(departure_date, '%Y-%m-%d').date()
+        ret_date = None
+        if return_date:
+            ret_date = datetime.strptime(return_date, '%Y-%m-%d').date()
+        
+        # Search flights with AI
+        async with enhanced_ai_travel_agent:
+            flight_results = await enhanced_ai_travel_agent.search_flights_with_ai(
+                origin=origin,
+                destination=destination,
+                departure_date=dep_date,
+                return_date=ret_date,
+                passengers=passengers,
+                use_ai=use_ai
+            )
+            
+            # Search hotels with AI
+            hotel_results = await enhanced_ai_travel_agent.search_hotels_with_ai(
+                location=destination,
+                check_in=dep_date,
+                check_out=ret_date or (dep_date + timedelta(days=3)),
+                guests=guests,
+                rooms=1,
+                use_ai=use_ai
+            )
+        
+        return {
+            "flights": flight_results,
+            "hotels": hotel_results,
+            "search_metadata": {
+                "origin": origin,
+                "destination": destination,
+                "departure_date": departure_date,
+                "return_date": return_date,
+                "passengers": passengers,
+                "guests": guests,
+                "use_ai": use_ai,
+                "searched_at": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI search failed: {str(e)}")
