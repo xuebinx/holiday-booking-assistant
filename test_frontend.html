@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Agent Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .flight-card, .hotel-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .flight-card h3, .hotel-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .source {
+            font-size: 12px;
+            color: #6c757d;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AI Travel Agent Test</h1>
+        <p>Test the AI-powered travel search functionality</p>
+        
+        <form id="searchForm">
+            <div class="form-group">
+                <label for="origin">Origin Airport:</label>
+                <input type="text" id="origin" value="LHR" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="destination">Destination Airport:</label>
+                <input type="text" id="destination" value="CDG" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="departureDate">Departure Date:</label>
+                <input type="date" id="departureDate" value="2024-09-10" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="returnDate">Return Date:</label>
+                <input type="date" id="returnDate" value="2024-09-13" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="passengers">Passengers:</label>
+                <input type="number" id="passengers" value="2" min="1" max="10" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="guests">Hotel Guests:</label>
+                <input type="number" id="guests" value="2" min="1" max="10" required>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="useAI"> Use AI (requires API keys)
+                </label>
+            </div>
+            
+            <button type="submit" id="searchBtn">🔍 Search Flights & Hotels</button>
+            <button type="button" id="testBtn">🧪 Run Test Suite</button>
+        </form>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function searchTravel(data) {
+            try {
+                const response = await fetch(`${API_BASE}/api/search-with-ai`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Search failed:', error);
+                throw error;
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Clear previous results
+            resultsDiv.innerHTML = '';
+            
+            // Add success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.innerHTML = `
+                <h3>✅ Search Completed Successfully!</h3>
+                <p>Found ${data.flights.length} flights and ${data.hotels.length} hotels</p>
+            `;
+            resultsDiv.appendChild(successDiv);
+            
+            // Add statistics
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'stats';
+            
+            const avgFlightPrice = data.flights.length > 0 
+                ? (data.flights.reduce((sum, f) => sum + f.price, 0) / data.flights.length).toFixed(0)
+                : 0;
+            
+            const avgHotelPrice = data.hotels.length > 0
+                ? (data.hotels.reduce((sum, h) => sum + h.price_per_night, 0) / data.hotels.length).toFixed(0)
+                : 0;
+            
+            const avgConfidence = data.flights.length > 0
+                ? (data.flights.reduce((sum, f) => sum + f.confidence, 0) / data.flights.length * 100).toFixed(1)
+                : 0;
+            
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${data.flights.length}</div>
+                    <div class="stat-label">Flights Found</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${data.hotels.length}</div>
+                    <div class="stat-label">Hotels Found</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$${avgFlightPrice}</div>
+                    <div class="stat-label">Avg Flight Price</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$${avgHotelPrice}</div>
+                    <div class="stat-label">Avg Hotel Price/Night</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${avgConfidence}%</div>
+                    <div class="stat-label">Avg Confidence</div>
+                </div>
+            `;
+            resultsDiv.appendChild(statsDiv);
+            
+            // Display flights
+            if (data.flights.length > 0) {
+                const flightsDiv = document.createElement('div');
+                flightsDiv.innerHTML = '<h2>✈️ Flight Options</h2>';
+                
+                data.flights.slice(0, 5).forEach(flight => {
+                    const flightCard = document.createElement('div');
+                    flightCard.className = 'flight-card';
+                    flightCard.innerHTML = `
+                        <h3>${flight.airline} - Flight ${flight.flight_number}</h3>
+                        <p><strong>Time:</strong> ${flight.departure_time} → ${flight.arrival_time}</p>
+                        <p><strong>Stops:</strong> ${flight.stops}</p>
+                        <p class="price">$${flight.price}</p>
+                        <span class="source">${flight.source}</span>
+                        <span class="source">${flight.extraction_method}</span>
+                    `;
+                    flightsDiv.appendChild(flightCard);
+                });
+                resultsDiv.appendChild(flightsDiv);
+            }
+            
+            // Display hotels
+            if (data.hotels.length > 0) {
+                const hotelsDiv = document.createElement('div');
+                hotelsDiv.innerHTML = '<h2>🏨 Hotel Options</h2>';
+                
+                data.hotels.slice(0, 5).forEach(hotel => {
+                    const hotelCard = document.createElement('div');
+                    hotelCard.className = 'hotel-card';
+                    hotelCard.innerHTML = `
+                        <h3>${hotel.name}</h3>
+                        <p><strong>Rating:</strong> ${hotel.rating}★</p>
+                        <p><strong>Amenities:</strong> ${hotel.amenities.join(', ')}</p>
+                        <p class="price">$${hotel.price_per_night}/night (Total: $${hotel.total_price})</p>
+                        <span class="source">${hotel.source}</span>
+                        <span class="source">${hotel.extraction_method}</span>
+                    `;
+                    hotelsDiv.appendChild(hotelCard);
+                });
+                resultsDiv.appendChild(hotelsDiv);
+            }
+        }
+        
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function showLoading() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <h3>🔍 Searching...</h3>
+                    <p>Please wait while we search for flights and hotels...</p>
+                </div>
+            `;
+        }
+        
+        // Form submission
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+            searchBtn.textContent = '🔍 Searching...';
+            
+            showLoading();
+            
+            try {
+                const data = {
+                    origin: document.getElementById('origin').value,
+                    destination: document.getElementById('destination').value,
+                    departure_date: document.getElementById('departureDate').value,
+                    return_date: document.getElementById('returnDate').value,
+                    passengers: parseInt(document.getElementById('passengers').value),
+                    guests: parseInt(document.getElementById('guests').value),
+                    use_ai: document.getElementById('useAI').checked
+                };
+                
+                const results = await searchTravel(data);
+                displayResults(results);
+                
+            } catch (error) {
+                showError(`Search failed: ${error.message}`);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔍 Search Flights & Hotels';
+            }
+        });
+        
+        // Test suite
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = '🧪 Running Tests...';
+            
+            const testCases = [
+                {
+                    name: 'London to Paris',
+                    data: {
+                        origin: 'LHR',
+                        destination: 'CDG',
+                        departure_date: '2024-09-10',
+                        return_date: '2024-09-13',
+                        passengers: 2,
+                        guests: 2,
+                        use_ai: false
+                    }
+                },
+                {
+                    name: 'London to New York',
+                    data: {
+                        origin: 'LHR',
+                        destination: 'JFK',
+                        departure_date: '2024-10-15',
+                        return_date: '2024-10-22',
+                        passengers: 1,
+                        guests: 1,
+                        use_ai: false
+                    }
+                }
+            ];
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>🧪 Test Suite Results</h2>';
+            
+            for (const testCase of testCases) {
+                try {
+                    resultsDiv.innerHTML += `<h3>Testing: ${testCase.name}</h3>`;
+                    const results = await searchTravel(testCase.data);
+                    resultsDiv.innerHTML += `<p>✅ ${testCase.name}: Found ${results.flights.length} flights, ${results.hotels.length} hotels</p>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p>❌ ${testCase.name}: Failed - ${error.message}</p>`;
+                }
+            }
+            
+            testBtn.disabled = false;
+            testBtn.textContent = '🧪 Run Test Suite';
+        });
+    </script>
+</body>
+</html> 
